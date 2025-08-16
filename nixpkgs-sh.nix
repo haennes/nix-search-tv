@@ -1,7 +1,7 @@
 type:
 {lib, config, pkgs, ...}:
 let
-  inherit (lib) mkOption mkEnableOption types last head splitString concatLines mapAttrsToList mkIf replaceStrings;
+  inherit (lib) mkOption mkEnableOption types last head splitString concatLines mapAttrsToList mkIf replaceStrings optionalString optional;
   options =  {
     programs.nix-search-tv-script = {
       enable = mkEnableOption "Wether to include the nix-serach-tv-script";
@@ -30,6 +30,7 @@ let
            type = with types; attrsOf str;
          };
         };
+        noogleEnable = mkEnableOption "wether to enable noogle-cli integration";
         keys = {
           searchSnippet = mkOption {
             default = "ctrl-w";
@@ -51,6 +52,10 @@ let
             default = "alt-p";
             type = types.str;
           };
+          noogle = mkOption {
+            default = "ctrl-l";
+            type = types.str;
+          };
 
         };
         opener = mkOption {
@@ -67,7 +72,18 @@ let
     };
   };
   cfg = config.programs.nix-search-tv-script; 
-  script_text = builtins.readFile ./nixpkgs.sh;
+  script_text = builtins.readFile (
+    "${  pkgs.applyPatches {
+      src = ./.;
+        patches = optional cfg.settings.noogleEnable 
+          (pkgs.fetchpatch2 {
+            name="noogle-integration";
+            url="https://github.com/haennes/nix-search-tv/commit/e48c60ea5b2b75a0b20e5d36bf8a01a9bdad9440.patch";
+            hash="sha256-0rSS9Flsgjw82r1PQvySnXa8pB3+Fz4uS2y0rGBDhZw=";
+          })
+        ;
+        }
+    }/nixpkgs.sh");
   script_without_config_tail= (last (splitString "# ========================================" script_text));
   script_without_config_head = (head (splitString "# === Change keybinds or add more here ===" script_text));
   map_indexes_to_config = idxs:  concatLines (mapAttrsToList (name: value: "\"${name} ${value}\"") idxs);
@@ -81,7 +97,7 @@ in
       
       name = cfg.outputPackageName;
       excludeShellChecks = [ "SC2016" ];
-      runtimeInputs = [ pkgs.fzf];
+      runtimeInputs = [ pkgs.fzf] ++ (optional cfg.settings.noogleEnable pkgs.glow);
       text =
       script_without_config_head +
     ''
@@ -99,6 +115,7 @@ in
       OPEN_HOMEPAGE_KEY=${cfg.settings.keys.openHomepage}
       NIX_SHELL_KEY=${cfg.settings.keys.nixShell}
       PRINT_PREVIEW_KEY=${cfg.settings.keys.printPreview}
+      ${optionalString cfg.settings.noogleEnable ''NOOGLE_KEY="${cfg.settings.keys.noogle}"''}
 
       OPENER="${cfg.settings.opener}"
     '' + (
