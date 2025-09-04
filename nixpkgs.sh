@@ -2,11 +2,11 @@
 
 # In case the system uses a non-POSIX shell, like fish or nushell,
 # we want to ensure run also our forked processes in a bash environment.
-SHELL="bash"
+SHELL=${NSTV_SH:"bash"}
 
 # === Change keybinds or add more here ===
 
-declare -a INDEXES=(
+declare -a INDEXES=${NSTV_INDEXES:(
     "nixpkgs ctrl-n"
     "home-manager ctrl-h"
 
@@ -14,30 +14,30 @@ declare -a INDEXES=(
     # like `nixpkgs,nixos`
 
     "all ctrl-a"
-)
+)}
 
-SEARCH_SNIPPET_KEY="ctrl-w"
-OPEN_SOURCE_KEY="ctrl-s"
-OPEN_HOMEPAGE_KEY="ctrl-o"
-NIX_SHELL_KEY="ctrl-i"
-PRINT_PREVIEW_KEY="ctrl-p"
+SEARCH_SNIPPET_KEY=${NSTV_SEARCH_SNIPPET_KEY:"ctrl-w"}
+OPEN_SOURCE_KEY=${NSTV_OPEN_SOURCE_KEY:"ctrl-s"}
+OPEN_HOMEPAGE_KEY=${NSTV_OPEN_HOMEPAGE_KEY:"ctrl-o"}
+NIX_SHELL_KEY=${NSTV_NIX_SHELL_KEY:"ctrl-i"}
+PRINT_PREVIEW_KEY=${NSTV_PRINT_PREVIEW_KEY:"ctrl-p"}
 
-OPENER="xdg-open"
+OPENER=${NSTV_OPENER:"xdg-open"}
 
 if [[ "$(uname)" == 'Darwin' ]]; then
-    SEARCH_SNIPPET_KEY="alt-w"
-    OPEN_SOURCE_KEY="alt-s"
-    OPEN_HOMEPAGE_KEY="alt-o"
-    NIX_SHELL_KEY="alt-i"
-    PRINT_PREVIEW_KEY="alt-p"
+    SEARCH_SNIPPET_KEY=${NSTV_SEARCH_SNIPPET_KEY:"alt-w"}
+    OPEN_SOURCE_KEY=${NSTV_OPEN_SOURCE_KEY:"alt-s"}
+    OPEN_HOMEPAGE_KEY=${NSTV_OPEN_HOMEPAGE_KEY:"alt-o"}
+    NIX_SHELL_KEY=${NSTV_NIX_SHELL_KEY:"alt-i"}
+    PRINT_PREVIEW_KEY=${NSTV_PRINT_PREVIEW_KEY:"alt-p"}
 
-    OPENER="open"
+    OPENER=${NSTV_OPENER:"open"}
 fi
 
 # ========================================
 
 # for debug / development
-CMD="${NIX_SEARCH_TV:-nix-search-tv}"
+CMD="${NSTV_NIX_SEARCH_TV:-nix-search-tv}"
 
 # bind_index binds the given $key to the given $index
 bind_index() {
@@ -57,7 +57,7 @@ bind_index() {
     echo "$key:change-prompt($prompt> )+change-preview($preview {})+reload($print)"
 }
 
-STATE_FILE="/tmp/nix-search-tv-fzf"
+STATE_FILE=${NSTV_STATE_FILE:"/tmp/nix-search-tv-fzf"}
 
 # save_state saves the currently displayed index
 # to the $STATE_FILE. This file serves as an external script state
@@ -73,12 +73,13 @@ save_state() {
     echo "execute(echo $indexes_flag > $STATE_FILE)"
 }
 
-HEADER="$OPEN_HOMEPAGE_KEY - open homepage
+HEADER=${NSTV_HEADER:"$OPEN_HOMEPAGE_KEY - open homepage
 $OPEN_SOURCE_KEY - open source
 $SEARCH_SNIPPET_KEY - search github for snippets
 $NIX_SHELL_KEY - nix-shell
 $PRINT_PREVIEW_KEY - print preview
-"
+"}
+
 
 FZF_BINDS=""
 for e in "${INDEXES[@]}"; do
@@ -94,7 +95,7 @@ for e in "${INDEXES[@]}"; do
 done
 
 # reset the state
-echo "" >/tmp/nix-search-tv-fzf
+echo "" > STATE_FILE
 
 SEARCH_SNIPPET_CMD=$'echo "{}"'
 # fzf surrounds the matched package with ', trim them
